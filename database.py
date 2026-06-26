@@ -116,6 +116,25 @@ class DBManager:
             cursor.close()
             conn.close()
 
+    def save_score(self, user_id, mode, score):
+        """Сохраняет или обновляет рекорд пользователя для конкретного режима"""
+        conn, cursor = self.get_connect()
+        try:
+            # Используем UPSERT (INSERT ... ON CONFLICT DO UPDATE)
+            cursor.execute("""
+                INSERT INTO scores (user_id, mode, score) 
+                VALUES (%s, %s, %s)
+                ON CONFLICT (user_id, mode) 
+                DO UPDATE SET score = GREATEST(scores.score, EXCLUDED.score);
+            """, (user_id, mode, score))
+            conn.commit()
+        except Exception as e:
+            print(f"Ошибка при сохранении рекорда: {e}")
+            conn.rollback()
+        finally:
+            cursor.close()
+            conn.close()
+
 
 if __name__ == "__main__":
     db = DBManager()
