@@ -135,6 +135,26 @@ class DBManager:
             cursor.close()
             conn.close()
 
+    def get_leaderboard(self, mode, limit=100):
+        """Возвращает список кортежей (username, score) для указанного режима, отсортированный по убыванию"""
+        conn, cursor = self.get_connect()
+        try:
+            cursor.execute("""
+                SELECT u.username, s.score 
+                FROM scores s
+                JOIN users u ON s.user_id = u.id
+                WHERE s.mode = %s
+                ORDER BY s.score DESC
+                LIMIT %s;
+            """, (mode, limit))
+            return cursor.fetchall()
+        except Exception as e:
+            print(f"Ошибка при получении таблицы лидеров: {e}")
+            return []
+        finally:
+            cursor.close()
+            conn.close()
+
 
 if __name__ == "__main__":
     db = DBManager()
