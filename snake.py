@@ -14,16 +14,27 @@ class SnakeGame:
         self.canvas = tk.Canvas(root, width=WIDTH, height=HEIGHT, bg="#2d3748")
         self.canvas.pack()
 
+        # Слушаем стрелочки для управления и Пробел для перезапуска
+        self.root.bind_all("<KeyPress>", self.change_direction)
+
+        # Запускаем игру в первый раз
+        self.start_game()
+
+    # --- СБРОС И ЗАПУСК ИГРЫ ---
+    def start_game(self):
+        # Очищаем холст от старых надписей, змейки и яблок
+        self.canvas.delete("all")
+
+        # Сбрасываем настройки к начальным
         self.direction = "Right"
         self.game_over = False
-
-        # --- НОВЫЕ ПЕРЕМЕННЫЕ ---
         self.score = 0
-        self.speed = 150  # Начальная скорость (задержка в мс между шагами)
+        self.speed = 150
 
+        # Пересоздаем объекты
         self.create_objects()
 
-        self.root.bind_all("<KeyPress>", self.change_direction)
+        # Запускаем цикл движения
         self.move_snake()
 
     def create_objects(self):
@@ -34,7 +45,6 @@ class SnakeGame:
         ]
         self.apple = self.canvas.create_oval(300, 200, 320, 220, fill="#f56565", outline="#e53e3e")
 
-        # --- ОТРИСОВКА СЧЕТЧИКА ОЧКОВ ---
         self.score_text = self.canvas.create_text(
             50, 20,
             text=f"Очки: {self.score}",
@@ -44,6 +54,12 @@ class SnakeGame:
 
     def change_direction(self, event):
         key = event.keysym
+
+        # Если игра окончена и нажат Пробел — перезапускаем
+        if self.game_over and key == "space":
+            self.start_game()
+            return
+
         if key == "Left" and self.direction != "Right":
             self.direction = "Left"
         elif key == "Right" and self.direction != "Left":
@@ -90,10 +106,17 @@ class SnakeGame:
         if self.check_collisions(x1, y1):
             self.game_over = True
             self.canvas.create_text(
-                WIDTH // 2, HEIGHT // 2,
+                WIDTH // 2, HEIGHT // 2 - 20,
                 text="GAME OVER",
                 fill="#fc8181",
                 font=("Arial", 30, "bold")
+            )
+            # Добавляем подсказку для игрока
+            self.canvas.create_text(
+                WIDTH // 2, HEIGHT // 2 + 20,
+                text="Нажми ПРОБЕЛ, чтобы начать заново",
+                fill="white",
+                font=("Arial", 14)
             )
             return
 
@@ -103,21 +126,16 @@ class SnakeGame:
             self.snake.insert(0, new_head)
             self.repaint_apple()
 
-            # --- ИЗМЕНЕНИЕ ОЧКОВ И СКОРОСТИ ---
             self.score += 1
-            # Обновляем текст на экране с помощью itemconfig
             self.canvas.itemconfig(self.score_text, text=f"Очки: {self.score}")
 
-            # Увеличиваем скорость (уменьшаем задержку таймера), но не меньше 50 мс
             if self.speed > 50:
                 self.speed -= 5
-
         else:
             last_segment = self.snake.pop()
             self.canvas.coords(last_segment, x1, y1, x2, y2)
             self.snake.insert(0, last_segment)
 
-        # Передаем обновленное значение self.speed в таймер
         self.root.after(self.speed, self.move_snake)
 
 
